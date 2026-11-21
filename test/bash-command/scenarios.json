@@ -1,6 +1,6 @@
 {
     "set_env": {
-        "image": "debian:bullseye",
+        "image": "debian:bookworm",
         "features": {
             "bash-command": {
                 "command": "echo -e HELLO=5 >> /etc/environment"
