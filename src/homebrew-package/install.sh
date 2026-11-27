@@ -48,12 +48,12 @@ install_via_homebrew() {
 		# `ensure_nanolayer` is a bash function that will find any existing nanolayer installations,
 		# and if missing - will download a temporary copy that automatically get deleted at the end
 		# of the script
-		ensure_nanolayer nanolayer_location "v0.4.29"
+		ensure_nanolayer nanolayer_location "v0.5.6"
 
 		$nanolayer_location \
 			install \
 			devcontainer-feature \
-			"ghcr.io/meaningful-ooo/devcontainer-features/homebrew:2.0.4" \
+			"ghcr.io/meaningful-ooo/devcontainer-features/homebrew:2" \
 			--option shallow_clone='true' --option update="true"
 		source /etc/profile.d/nanolayer-homebrew.sh
 	fi
@@ -63,9 +63,13 @@ install_via_homebrew() {
 	else
 		package_full="${package}@${version}"
 	fi
-	# Solves CVE-2022-24767 mitigation in Git >2.35.2
-	# For more information: https://github.blog/2022-04-12-git-security-vulnerability-announced/
-	git config --system --add safe.directory "$(brew --prefix)/Homebrew/Library/Taps/homebrew/homebrew-core"
+
+	tap_dir="$(brew --prefix)/Homebrew/Library/Taps/homebrew/homebrew-core"
+	if [ -d "$tap_dir" ]; then
+		# Solves CVE-2022-24767 mitigation in Git >2.35.2
+		# For more information: https://github.blog/2022-04-12-git-security-vulnerability-announced/
+		git config --system --add safe.directory "$tap_dir"
+	fi
 
 	su - "$_REMOTE_USER" <<EOF
 		set -e
@@ -87,23 +91,23 @@ install_via_homebrew() {
 			brew install $installation_flags --overwrite "$package_full"
 		}
 
+		if brew desc --formulae "$package_full" >/dev/null 2>&1; then
+			brew_safe_install $installation_flags "$package_full"
+		elif [ -d "$tap_dir" ]; then
+			if [ "\$(git -C "$tap_dir" rev-parse --is-shallow-repository 2>/dev/null)" = "true" ]; then
+				echo "Unshallowing homebrew-core. This could take a while."
+				git -C "$tap_dir" fetch --unshallow
+			fi
 
-		if brew desc --eval-all --formulae "$package_full"; then
-			# If a version is exists then install it the regular way
-
-			brew_safe_install $installation_flags  "$package_full"
+			if brew desc --formulae "$package" >/dev/null 2>&1; then
+				brew_safe_install $installation_flags "$package"
+			else
+				echo "Formula '$package_full' not found in Homebrew formulae." >&2
+				exit 1
+			fi
 		else
-			# unshallow and extract as last resort
-			echo "Unshallowing homebrew-core. This could take a while."
-			git -C "$(brew --prefix)/Homebrew/Library/Taps/homebrew/homebrew-core" fetch --unshallow
-			brew extract --force --version="$version" "$package" homebrew/cask
-
-			brew_safe_install $installation_flags  "$package_full"
-
-			# attempt to remove tap in order to save disk space
-			set +e
-			brew untap homebrew/cask --force
-			set -e
+			echo "Formula '$package_full' not found in Homebrew formulae." >&2
+			exit 1
 		fi
 
 		brew link --overwrite --force "$package_full"
