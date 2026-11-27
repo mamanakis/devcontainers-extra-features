@@ -44,7 +44,7 @@ jobs:
       all-features: ${{ steps.list-features.outputs.all_features }}
       changed-features: ${{ steps.list-features.outputs.changed_features }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - run: |
           echo ${{ inputs.enabled  }}
           echo ${{ github.event_name  }}
@@ -125,7 +125,7 @@ jobs:
       matrix:
         features: ${{ fromJson(needs.prepare-matrix.outputs.features_to_test) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Check if the disk has to be cleaned up
         id: check-disk-space-requiement
@@ -180,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: "Install latest devcontainer CLI"
         run: npm install -g @devcontainers/cli
