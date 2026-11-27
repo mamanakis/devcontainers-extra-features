@@ -15,7 +15,7 @@ ensure_nanolayer nanolayer_location "v0.4.39"
 $nanolayer_location \
     install \
     devcontainer-feature \
-    "ghcr.io/devcontainers-extra/features/homebrew-package:1.0.8" \
+    "ghcr.io/devcontainers-extra/features/homebrew-package:1.0.9" \
     --option package='starship' --option version="$VERSION"
 
 
